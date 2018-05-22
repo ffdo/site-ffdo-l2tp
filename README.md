@@ -1,2 +1,1 @@
-# site-ffdo-l2tp
- Freifunk Dortmund (ffdo) specific Gluon configuration using l2tp
+Gluon Konfiguration für Freifunk Dortmund Domäne-01 - Test und Dev

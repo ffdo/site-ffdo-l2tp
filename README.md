@@ -1,1 +1,1 @@
-Gluon Konfiguration für Freifunk Dortmund Domäne-08 - Lünen
+Gluon Konfiguration für Freifunk Dortmund Domäne-06 - Dortmund 4

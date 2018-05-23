@@ -372,7 +372,7 @@ check_domains
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
 	arr=($DOMAINS_TO_BUILD)
-	git_checkout "$GLUON_SITEDIR" ${arr[1]}
+	git_checkout "$GLUON_SITEDIR" ${arr[0]}
 	if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
 	then
 		gluon_prepare_buildprocess

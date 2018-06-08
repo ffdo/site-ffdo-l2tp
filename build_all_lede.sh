@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEFAULT_GLUON_IMAGEDIR_PREFIX='/data/images.ffdo.de/ffdo/'
+DEFAULT_GLUON_IMAGEDIR_PREFIX='/data/images.ffdo.de/ffdo/' # use absolute path here 
 DEFAULT_GLUON_SITEDIR=`dirname \`pwd\``'/site/'
 DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
@@ -230,7 +230,7 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 	-S --skip-gluon-prebuilds: Skip make dirclean of Gluon folder. 
 	-d --domain: Branches of your site-Git-repository to build. If left empty, all Domäne-XX will be build. This parameter can be used multiple times or you can set multiple branches at once, seperated by space and in quotes: "branch1 branch2 branch3".
 	-t*|--target: Targets to build. If left empty, all targets will be build. If broken is set, even those will be build. This parameter can be used multiple times or you can set multiple targets at once, seperated by space and in quotes: "target1 target2 target3".
-	-f --force-dire-clean: Force a make dir clean after each target.
+	-f --force-dir-clean: Force a make dir clean after each target.
 
 
 Please report issues here: https://github.com/FreiFunkMuenster/tools/issues
@@ -372,11 +372,11 @@ check_domains
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
 	arr=($DOMAINS_TO_BUILD)
-	git_checkout "$GLUON_SITEDIR" ${arr[0]}
+	git_checkout "$GLUON_SITEDIR" "${arr[0]}"
 	if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
 	then
 		gluon_prepare_buildprocess
 	fi
 	build_selected_domains_and_selected_targets
-	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." truefi
+	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." true
 fi

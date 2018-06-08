@@ -77,12 +77,32 @@ function notify () {
 	COLOR=$1
 	MESSAGE=$2
 	NOTIFY=$3
+	NC='\033[0m' # No Color
+	case "$COLOR" in 
+		red)
+			CCODE="\033[31m"
+			;;
+		yellow)
+			CCODE="\093[33m"
+			;;
+		purple)
+			CCODE="\095[35m" # ok, bright magenta. Near enough
+			;;
+		green)
+			CCODE="\033[32m"
+			;;
+		*)
+			CCODE=""
+			NC=""
+			;;
+	esac
+	echo -e "${CCODE}${MESSAGE}${NC}"
 	if [ ! -z "$HIPCHAT_NOTIFY_URL" ]; then
 		curl -d '{"color":"'"$COLOR"'","message":"'"$(hostname) --> $MESSAGE"'","notify":"'"$NOTIFY"'","message_format":"text"}' -H 'Content-Type: application/json' $HIPCHAT_NOTIFY_URL
 	fi
-        if [ ! -z "$TELEGRAM_NOTIFY_URL" ]; then
-                curl --max-time 10 -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL
-        fi
+	if [ ! -z "$TELEGRAM_NOTIFY_URL" ]; then
+        curl --max-time 10 -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL
+    fi
 }
 
 function enable_debugging () {

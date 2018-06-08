@@ -1,11 +1,10 @@
 # site-ffdo-l2tp
-# site-ffdo
- Freifunk Dortmund (ffdo) specific Gluon configuration using l2tp and the build script.
+
+Freifunk Dortmund (ffdo) specific Gluon configuration using l2tp and the build script.
 
 ## Using the Dockerfile
 
 See [Docker Installation](https://docs.docker.com/install/) on how to get Docker.
-
 
 ```
 ./build.sh

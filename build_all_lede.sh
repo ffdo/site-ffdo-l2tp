@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEFAULT_GLUON_IMAGEDIR_PREFIX='/data/images.ffdo.de/ffdo/' # use absolute path here 
+DEFAULT_GLUON_IMAGEDIR_PREFIX='/usr/src/build/build/data/images.ffdo.de/ffdo/' # use absolute path here 
 DEFAULT_GLUON_SITEDIR=`dirname \`pwd\``'/site/'
 DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
@@ -29,6 +29,7 @@ BROKEN=""
 RETRIES=""
 SKIP_GLUON_PREBUILD_ACTIONS=""
 imagedir=""
+modulesdir=""
 FORCE_DIR_CLEAN=""
 
 function expand_relativ_path () {
@@ -39,7 +40,8 @@ function set_arguments_not_passed () {
 	GLUON_DIR=${GLUON_DIR:-$DEFAULT_GLUON_DIR}
 	GLUON_SITEDIR=${GLUON_SITEDIR:-$DEFAULT_GLUON_SITEDIR}
 	GLUON_IMAGEDIR_PREFIX=${GLUON_IMAGEDIR_PREFIX:-$DEFAULT_GLUON_IMAGEDIR_PREFIX}
-	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
+#	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
+	CORES=${CORES:-$(expr $(nproc) + 1)}
 	SITE_URL=${SITE_URL:-$DEFAULT_SITE_URL}
 	GLUON_URL=${GLUON_URL:-$DEFAULT_GLUON_URL}
 	RETRIES=${RETRIES:-1}
@@ -218,7 +220,8 @@ function process_arguments () {
 }
 
 function build_make_opts () {
-	MAKE_OPTS="-C $GLUON_DIR GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_SITEDIR=$GLUON_SITEDIR -j$CORES V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
+
+	MAKE_OPTS="-C $GLUON_DIR GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_SITEDIR=$GLUON_SITEDIR V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
 }
 
 function is_git_repo () {
@@ -291,18 +294,20 @@ function force_dir_clean () {
 }
 
 function gluon_prepare_buildprocess () {
-	command="make update ${MAKE_OPTS/-j* /-j1 }"
+	command="make update ${MAKE_OPTS}"
 	try_execution_x_times $RETRIES "$command"
 	if [[ $FORCE_DIR_CLEAN=="1" ]]
 	then
 		force_dir_clean
 	fi
 	check_targets
-	for target in $TARGETS
-	do
-		command="make clean $MAKE_OPTS GLUON_TARGET=$target V=s -j$CORES GLUON_IMAGEDIR=$imagedir"
+ 	for target in $TARGETS
+ 	do
+		command="make clean $MAKE_OPTS GLUON_TARGET=$target GLUON_IMAGEDIR=$imagedir"
 		try_execution_x_times $RETRIES "$command"
 	done
+	mkdir -p "$GLUON_DIR/tmp"
+	mkdir tmp
 }
 
 function get_all_targets_from_gluon_repo () {
@@ -346,21 +351,24 @@ function try_execution_x_times () {
 }
 
 function build_target_for_domaene () {
-	command="make $MAKE_OPTS GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
+	command="make $MAKE_OPTS -j$CORES GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
 	try_execution_x_times $RETRIES "$command"
 }
 
 function make_manifests () {
-	make manifest GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_BRANCH=experimental GLUON_PRIORITY=0 $MAKE_OPTS GLUON_IMAGEDIR="$imagedir"
-	make manifest GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_BRANCH=beta GLUON_PRIORITY=1 $MAKE_OPTS GLUON_IMAGEDIR="$imagedir"
-	make manifest GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_BRANCH=stable GLUON_PRIORITY=3 $MAKE_OPTS GLUON_IMAGEDIR="$imagedir"
+
+	make manifest $MAKE_OPTS GLUON_BRANCH=experimental GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
+	make manifest $MAKE_OPTS GLUON_BRANCH=beta GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
+	make manifest $MAKE_OPTS GLUON_BRANCH=stable GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
 }
 
 
 function build_selected_targets_for_domaene () {
 	prefix=`echo $1|sed -e 's/Domäne-/domaene/'`
-	imagedir="$GLUON_IMAGEDIR_PREFIX"/"$prefix"/versions/v$VERSION
+	imagedir="$GLUON_IMAGEDIR_PREFIX"/"$prefix"/versions/$VERSION/images
+	modulesdir="$GLUON_IMAGEDIR_PREFIX"/"$prefix"/versions/$VERSION/modules
 	mkdir -p "$imagedir"
+	mkdir -p "$modulesdir"
 	git_checkout "$GLUON_SITEDIR" $1
 	git_pull "$GLUON_SITEDIR"
 	for j in $TARGETS
@@ -383,6 +391,8 @@ function build_selected_domains_and_selected_targets () {
 
 process_arguments "$@"
 notify "green" "Build $GLUON_VERSION+$VERSION gestartet." true
+notify "green" "docker cp $HOSTNAME:/usr/src/build/build <destination>" true
+
 build_make_opts
 prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_DIR" $GLUON_URL
@@ -399,4 +409,5 @@ then
 	fi
 	build_selected_domains_and_selected_targets
 	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." true
+	notify "green" "docker cp $HOSTNAME:/usr/src/build/build <destination>" true
 fi

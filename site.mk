@@ -22,7 +22,6 @@ GLUON_SITE_PACKAGES := \
 	gluon-web-wifi-config \
 	gluon-mesh-batman-adv-15 \
 	gluon-mesh-vpn-tunneldigger \
-	gluon-mesh-vpn-core \
 	gluon-radvd \
 	gluon-setup-mode \
 	gluon-status-page \

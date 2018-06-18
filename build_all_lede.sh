@@ -40,8 +40,8 @@ function set_arguments_not_passed () {
 	GLUON_DIR=${GLUON_DIR:-$DEFAULT_GLUON_DIR}
 	GLUON_SITEDIR=${GLUON_SITEDIR:-$DEFAULT_GLUON_SITEDIR}
 	GLUON_IMAGEDIR_PREFIX=${GLUON_IMAGEDIR_PREFIX:-$DEFAULT_GLUON_IMAGEDIR_PREFIX}
-#	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
-	CORES=${CORES:-$(expr $(nproc) + 1)}
+	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
+#	CORES=${CORES:-$(expr $(nproc) + 1)}
 	SITE_URL=${SITE_URL:-$DEFAULT_SITE_URL}
 	GLUON_URL=${GLUON_URL:-$DEFAULT_GLUON_URL}
 	RETRIES=${RETRIES:-1}
@@ -303,7 +303,7 @@ function gluon_prepare_buildprocess () {
 	check_targets
  	for target in $TARGETS
  	do
-		command="make clean $MAKE_OPTS GLUON_TARGET=$target GLUON_IMAGEDIR=$imagedir"
+		command="make clean $MAKE_OPTS -j$CORES GLUON_TARGET=$target GLUON_IMAGEDIR=$imagedir"
 		try_execution_x_times $RETRIES "$command"
 	done
 	mkdir -p "$GLUON_DIR/tmp"
@@ -371,21 +371,29 @@ function build_selected_targets_for_domaene () {
 	mkdir -p "$modulesdir"
 	git_checkout "$GLUON_SITEDIR" $1
 	git_pull "$GLUON_SITEDIR"
-	for j in $TARGETS
+	
+	for target in $TARGETS
 	do
-		notify "yellow" "$i Target $j gestartet." false
-		build_target_for_domaene $j
-		notify "yellow" "$i Target $j fertig." false
+ 		if [[ $DO_CLEAN_BEFORE_BUILD == "1" ]]
+		then
+			notify "yellow" "$CUR_BUILD_DOMAIN Target $target säubern." false
+			make clean $MAKE_OPTS GLUON_BRANCH=stable GLUON_TARGET=$target 
+		fi
+		notify "yellow" "$CUR_BUILD_DOMAIN Target $target gestartet." false
+		build_target_for_domaene $target
+		notify "yellow" "$CUR_BUILD_DOMAIN Target $target fertig." false
 	done
 	make_manifests
 }
 
 function build_selected_domains_and_selected_targets () {
-	for i in $DOMAINS_TO_BUILD
+	DO_CLEAN_BEFORE_BUILD=0
+	for CUR_BUILD_DOMAIN in $DOMAINS_TO_BUILD
 	do
-		notify "purple" "$i gestartet." false
-		build_selected_targets_for_domaene $i
-		notify "purple" "$i fertig." false
+		notify "purple" "$CUR_BUILD_DOMAIN gestartet." false
+		build_selected_targets_for_domaene $CUR_BUILD_DOMAIN
+		notify "purple" "$CUR_BUILD_DOMAIN fertig." false
+		DO_CLEAN_BEFORE_BUILD=0
 	done
 }
 

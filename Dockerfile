@@ -1,14 +1,18 @@
 FROM debian:stretch
 MAINTAINER Cajus Kamer <Cajus.Kamer@arcor.de>
 
-ENV GLUON_SITE ffdo
+ENV GLUON_TAG_DOCKER_ENV v2017.1.7
+ENV GLUON_RELEASE_DOCKER_ENV 2.0.1
 
-ENV GLUON_TAG v2017.1.7
-ENV GLUON_RELEASE 1.2.1
 
-ENV GLUON_BRANCH stable
-ENV GLUON_BROKEN 1
-ENV GLUON_TARGETS ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik mpc85xx-generic ramips-mt7621 x86-generic x86-64 
+ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik mpc85xx-generic ramips-mt7621 x86-generic x86-64 
+# ENV DOMAINS_TO_BUILD_DOCKER_ENV Domäne-01 Domäne-02 Domäne-03 Domäne-04 Domäne-05 Domäne-06 Domäne-07 Domäne-08 Domäne-09 Domäne-09 Domäne-10 Domäne-11
+
+ENV BUILD_GLUON_DIR_DOCKER_ENV /usr/src/build/gluon
+ENV BUILD_SITE_DIR_DOCKER_ENV /usr/src/build/site
+ENV BUILD_LOG_DIR_DOCKER_ENV /usr/src/build/log
+ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
+ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo/
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBIAN_PRIORITY critical
@@ -26,5 +30,5 @@ WORKDIR /usr/src/build
 RUN git config --global user.email "technik@freifunk-dortmund.de"
 RUN git config --global user.name "FFDO Gluon Build Container"
 
-CMD ["/bin/bash", "/usr/src/build_all_lede.sh", "-g", "/usr/src/build/gluon/", "-s", "/usr/src/build/site/", "-o", "/usr/src/build/build/data/images.ffdo.de/ffdo/", "-B", "--force-retries", "3", "-d", "Domäne-01", "-d", "Domäne-02", "-d", "Domäne-03", "-d", "Domäne-04", "-d", "Domäne-05", "-d", "Domäne-06", "-d", "Domäne-07", "-d", "Domäne-08", "-d", "Domäne-09", "-d", "Domäne-09", "-d", "Domäne-10", "-d", "Domäne-11", "-t", "ar71xx-generic", "-t", "ar71xx-nand", "-t", "ar71xx-tiny", "-t", "ar71xx-mikrotik", "-t", "mpc85xx-generic", "-t", "ramips-mt7621", "-t", "x86-generic", "-t", "x86-64", "v2017.1.7", "1.2.1"]
+CMD ["/bin/bash", "/usr/src/build_all_lede.sh", "-B", "--force-retries", "3"]
 

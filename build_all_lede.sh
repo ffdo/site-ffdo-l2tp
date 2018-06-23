@@ -1,10 +1,12 @@
 #!/bin/bash
 
-DEFAULT_GLUON_IMAGEDIR_PREFIX='/usr/src/build/build/data/images.ffdo.de/ffdo/' # use absolute path here 
-DEFAULT_GLUON_SITEDIR=`dirname \`pwd\``'/site/'
 DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
-DEFAULT_GLUON_DIR='../gluon'
+DEFAULT_BUILD_OUTPUT_DIR=${BUILD_OUTPUT_DIR_DOCKER_ENV:-'../build/'}
+DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV/:-'data/images.ffdo.de/ffdo/'}
+DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
+DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
+
 if [ -f HIPCHAT_AUTH_TOKEN ]; then
 	HIPCHAT_NOTIFY_URL="https://hc.infrastruktur.ms/v2/room/34/notification?auth_token=$(cat HIPCHAT_AUTH_TOKEN)" # HIPCHAT_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für HipChat enthalten.
 else
@@ -16,38 +18,43 @@ else
 	TELEGRAM_NOTIFY_URL=""
 fi
 TELEGRAM_NOTIFY_CHATID=""
-GLUON_VERSION=""
-VERSION=""
-TARGETS=""
+GLUON_VERSION=${GLUON_TAG_DOCKER_ENV:-''}
+VERSION=${GLUON_RELEASE_DOCKER_ENV:-''}
+TARGETS_TO_BUILD=""
+CUR_BUILD_TARGET=""
 CORES=""
 MAKE_OPTS=""
 DOMAINS_TO_BUILD=""
-TARGETS_TO_BUILD=""
+CUR_BUILD_DOMAIN=""
 SITE_URL=""
 GLUON_URL=""
 BROKEN=""
 RETRIES=""
 SKIP_GLUON_PREBUILD_ACTIONS=""
+FORCE_DIR_CLEAN=""
+BUILD_OUTPUT_DIR=""
 imagedir=""
 modulesdir=""
-FORCE_DIR_CLEAN=""
 
 function expand_relativ_path () {
 	echo ${1/../$(dirname $(pwd))}
 }
 
 function set_arguments_not_passed () {
-	GLUON_DIR=${GLUON_DIR:-$DEFAULT_GLUON_DIR}
+	GLUON_GLUONDIR=${GLUON_GLUONDIR:-$DEFAULT_GLUON_DIR}
 	GLUON_SITEDIR=${GLUON_SITEDIR:-$DEFAULT_GLUON_SITEDIR}
-	GLUON_IMAGEDIR_PREFIX=${GLUON_IMAGEDIR_PREFIX:-$DEFAULT_GLUON_IMAGEDIR_PREFIX}
-	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
-#	CORES=${CORES:-$(expr $(nproc) + 1)}
+	GLUON_OUTPUTDIR_PREFIX=${GLUON_OUTPUTDIR_PREFIX:-$DEFAULT_GLUON_OUTPUTDIR_PREFIX}
+#	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
+	CORES=${CORES:-$(expr $(nproc) + 1)}
 	SITE_URL=${SITE_URL:-$DEFAULT_SITE_URL}
 	GLUON_URL=${GLUON_URL:-$DEFAULT_GLUON_URL}
 	RETRIES=${RETRIES:-1}
 	SKIP_GLUON_PREBUILD_ACTIONS=${SKIP_GLUON_PREBUILD_ACTIONS:-0}
+	BUILD_OUTPUT_DIR=${DEFAULT_BUILD_OUTPUT_DIR}
 
-	GLUON_DIR=$(expand_relativ_path "$GLUON_DIR")
+	GLUON_OUTPUTDIR_PREFIX=$(expand_relativ_path "$GLUON_OUTPUTDIR_PREFIX")
+	BUILD_OUTPUT_DIR=$(expand_relativ_path "$BUILD_OUTPUT_DIR")
+	GLUON_GLUONDIR=$(expand_relativ_path "$GLUON_GLUONDIR")
 	GLUON_SITEDIR=$(expand_relativ_path "$GLUON_SITEDIR")
 	GLUON_IMAGEDIR=$(expand_relativ_path "$GLUON_IMAGEDIR")
 	FORCE_DIR_CLEAN=${FORCE_DIR_CLEAN:-0}
@@ -116,7 +123,7 @@ function add_domain_to_buildprocess () {
 }
 
 function add_target_to_buildprocess () {
-	TARGETS="$TARGETS $1"
+	TARGETS_TO_BUILD="$TARGETS_TO_BUILD $1"
 }
 
 function process_arguments () {
@@ -146,7 +153,7 @@ function process_arguments () {
 				shift
 				;;
 			-g*|--gluon-dir*)
-				GLUON_DIR=$value
+				GLUON_GLUONDIR=$value
 				shift
 				;;
 			-s*|--site-dir*)
@@ -154,7 +161,7 @@ function process_arguments () {
 				shift
 				;;
 			-o*|--output-prefix*)
-				GLUON_IMAGEDIR_PREFIX=$value
+				GLUON_OUTPUTDIR_PREFIX=$value
 				shift
 				;;
 			--gluon-url*)
@@ -221,7 +228,7 @@ function process_arguments () {
 
 function build_make_opts () {
 
-	MAKE_OPTS="-C $GLUON_DIR GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_SITEDIR=$GLUON_SITEDIR V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
+	MAKE_OPTS="-C $GLUON_GLUONDIR GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_SITEDIR=$GLUON_SITEDIR V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
 }
 
 function is_git_repo () {
@@ -247,7 +254,7 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 	-s --site-dir: Path to the site config. Default is "../site".
 	-o --output-prefix: Prefix for output folder, default is "/var/www/html".
 	--gluon-url: URL to Gluon repository, default is "https://github.com/freifunk-gluon/gluon.git".
-	--site-url: URL to the site configuration. Default is site-ffms of Freifunk Münsterland.
+	--site-url: URL to the site configuration. Default is site-ffdo-l2tp of Freifunk Dortmund.
 	-D --enable-debugging: Enables debugging by setting "set -x". This must be the first parameter, if you want to debug the parameter parsing.
 	-B --enable-broken: Enable the building of broken targets and broken images.
 	-S --skip-gluon-prebuilds: Skip make dirclean of Gluon folder. 
@@ -256,10 +263,16 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 	-f --force-dir-clean: Force a make dir clean after each target.
 
 
-Please report issues here: https://github.com/FreiFunkMuenster/tools/issues
+Please report issues here: 
+	https://github.com/ffdo/site-ffdo-l2tp/issues
+	https://github.com/FreiFunkMuenster/tools/issues
 
 License: GPLv3, Author: Matthias Walther'
 	exit 1
+}
+
+running_in_docker () {
+  (awk -F/ '$2 == "docker"' /proc/self/cgroup | read non_empty_input)
 }
 
 function is_folder () {
@@ -301,12 +314,12 @@ function gluon_prepare_buildprocess () {
 		force_dir_clean
 	fi
 	check_targets
- 	for target in $TARGETS
- 	do
+	for target in $TARGETS_TO_BUILD
+	do
 		command="make clean $MAKE_OPTS -j$CORES GLUON_TARGET=$target GLUON_IMAGEDIR=$imagedir"
 		try_execution_x_times $RETRIES "$command"
 	done
-	mkdir -p "$GLUON_DIR/tmp"
+	mkdir -p "$GLUON_GLUONDIR/tmp"
 	mkdir tmp
 }
 
@@ -315,9 +328,14 @@ function get_all_targets_from_gluon_repo () {
 }
 
 function check_targets () {
-	if [[ $TARGETS == "" ]]
+	if [[ $TARGETS_TO_BUILD == "" ]]
 	then
-		TARGETS=$(get_all_targets_from_gluon_repo)
+		if [[ $GLUON_TARGETS_DOCKER_ENV == "" ]]
+		then
+			TARGETS_TO_BUILD=$(get_all_targets_from_gluon_repo)
+		else
+			TARGETS_TO_BUILD=$GLUON_TARGETS_DOCKER_ENV
+		fi
 	fi
 }
 
@@ -325,10 +343,29 @@ function get_all_domains_from_site_repo () {
 	echo `git -C "$GLUON_SITEDIR" branch -a|grep -v HEAD|grep origin/Domäne| sed -e 's/.*\/Domäne/Domäne/'`
 }
 
+function create_checksumfile_in_dir () {
+	chks_dir=$(expand_relativ_path "$1")
+	if is_folder "$chks_dir"
+	then 
+		echo "$CUR_BUILD_DOMAIN: Creating SHA512 sums in: "$(basename "$chks_dir")
+		MYPWD=$(pwd)
+		cd "$chks_dir"
+		sha512sum * > ./sha512sum.txt
+		cd $MYPWD
+	else 
+		echo "Creating SHA512 sums: Directory $chks_dir does not exist."
+	fi
+}
+
 function check_domains () {
 	if [[ $DOMAINS_TO_BUILD == "" ]]
 	then
-		DOMAINS_TO_BUILD=$(get_all_domains_from_site_repo)
+		if [[ $DOMAINS_TO_BUILD_DOCKER_ENV == "" ]]
+		then
+			DOMAINS_TO_BUILD=$(get_all_domains_from_site_repo)
+		else 
+			DOMAINS_TO_BUILD=$DOMAINS_TO_BUILD_DOCKER_ENV
+		fi
 	fi
 }
 
@@ -352,11 +389,11 @@ function try_execution_x_times () {
 
 function build_target_for_domaene () {
 	command="make $MAKE_OPTS -j$CORES GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
+	echo $command
 	try_execution_x_times $RETRIES "$command"
 }
 
 function make_manifests () {
-
 	make manifest $MAKE_OPTS GLUON_BRANCH=experimental GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
 	make manifest $MAKE_OPTS GLUON_BRANCH=beta GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
 	make manifest $MAKE_OPTS GLUON_BRANCH=stable GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
@@ -365,24 +402,31 @@ function make_manifests () {
 
 function build_selected_targets_for_domaene () {
 	prefix=`echo $1|sed -e 's/Domäne-/domaene/'`
-	imagedir="$GLUON_IMAGEDIR_PREFIX"/"$prefix"/versions/$VERSION/images
-	modulesdir="$GLUON_IMAGEDIR_PREFIX"/"$prefix"/versions/$VERSION/modules
+	imagedir="$GLUON_OUTPUTDIR_PREFIX"/"$prefix"/releases/$VERSION/images
+	modulesdir="$GLUON_OUTPUTDIR_PREFIX"/"$prefix"/releases/$VERSION/modules
 	mkdir -p "$imagedir"
-	mkdir -p "$modulesdir"
+#	mkdir -p "$modulesdir"
 	git_checkout "$GLUON_SITEDIR" $1
 	git_pull "$GLUON_SITEDIR"
 	
-	for target in $TARGETS
+	for CUR_BUILD_TARGET in $TARGETS_TO_BUILD
 	do
- 		if [[ $DO_CLEAN_BEFORE_BUILD == "1" ]]
+		if [[ $DO_CLEAN_BEFORE_BUILD == "1" ]]
 		then
-			notify "yellow" "$CUR_BUILD_DOMAIN Target $target säubern." false
-			make clean $MAKE_OPTS GLUON_BRANCH=stable GLUON_TARGET=$target 
+			notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET säubern." false
+			make clean $MAKE_OPTS GLUON_BRANCH=stable GLUON_TARGET=$CUR_BUILD_TARGET 
 		fi
-		notify "yellow" "$CUR_BUILD_DOMAIN Target $target gestartet." false
-		build_target_for_domaene $target
-		notify "yellow" "$CUR_BUILD_DOMAIN Target $target fertig." false
+		notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET gestartet." false
+		build_target_for_domaene $CUR_BUILD_TARGET
+		notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET fertig." false
 	done
+	
+	create_checksumfile_in_dir "$imagedir"/factory
+	create_checksumfile_in_dir "$imagedir"/sysupgrade
+# TODO:
+#   split target name into "base - variation": 'x86-64';
+#   use them as subfolder names.
+#	create_checksumfile_in_dir "$modulesdir"/
 	make_manifests
 }
 
@@ -397,16 +441,27 @@ function build_selected_domains_and_selected_targets () {
 	done
 }
 
+
+echo "BUILD_OUTPUT_DIR_PREFIX_DOCKER_ENV: "$BUILD_OUTPUT_DIR_PREFIX_DOCKER_ENV
+echo "BUILD_GLUON_DIR_DOCKER_ENV: " $BUILD_GLUON_DIR_DOCKER_ENV
+echo "BUILD_SITE_DIR_DOCKER_ENV: " $BUILD_SITE_DIR_DOCKER_ENV
+echo "GLUON_TARGETS_DOCKER_ENV:" $GLUON_TARGETS_DOCKER_ENV
+
 process_arguments "$@"
 notify "green" "Build $GLUON_VERSION+$VERSION gestartet." true
-notify "green" "docker cp $HOSTNAME:/usr/src/build/build <destination>" true
+if running_in_docker 
+then 
+	notify "green" "docker cp $HOSTNAME:/usr/src/build/log <destination>" true
+fi
+
 
 build_make_opts
 prepare_repo "$GLUON_SITEDIR" $SITE_URL
-prepare_repo "$GLUON_DIR" $GLUON_URL
-git_checkout "$GLUON_DIR" $GLUON_VERSION
+prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
+git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
 check_targets
 check_domains
+
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
 	arr=($DOMAINS_TO_BUILD)
@@ -417,5 +472,10 @@ then
 	fi
 	build_selected_domains_and_selected_targets
 	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." true
-	notify "green" "docker cp $HOSTNAME:/usr/src/build/build <destination>" true
+	if running_in_docker 
+	then 
+		force_dir_clean
+		notify "green" "docker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
+	fi
 fi
+

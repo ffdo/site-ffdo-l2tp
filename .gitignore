@@ -1,0 +1,4 @@
+*~
+gluon/
+*.authToken
+.directory

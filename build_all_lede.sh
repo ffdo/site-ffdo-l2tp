@@ -12,12 +12,14 @@ if [ -f HIPCHAT_AUTH_TOKEN ]; then
 else
 	HIPCHAT_NOTIFY_URL=""
 fi
-if [ -f TELEGRAM_AUTH_TOKEN ]; then
-	TELEGRAM_NOTIFY_URL="https://api.telegram.org/bot$(cat TELEGRAM_AUTH_TOKEN)/sendMessage" #TELEGRAM_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für Telegram enthalten.
+if [ -f $TELEGRAM_AUTH_TOKEN ]; then
+	TELEGRAM_NOTIFY_URL="https://api.telegram.org/bot$(cat $TELEGRAM_AUTH_TOKEN)/sendMessage" #TELEGRAM_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für Telegram enthalten.
+	TELEGRAM_NOTIFY_CHATID=${TELEGRAM_NOTIFY_CHATID_DOCKER_ENV:-''}
 else
 	TELEGRAM_NOTIFY_URL=""
+	TELEGRAM_NOTIFY_CHATID=""
 fi
-TELEGRAM_NOTIFY_CHATID=""
+
 GLUON_VERSION=${GLUON_TAG_DOCKER_ENV:-''}
 VERSION=${GLUON_RELEASE_DOCKER_ENV:-''}
 TARGETS_TO_BUILD=""
@@ -110,7 +112,7 @@ function notify () {
 		curl -d '{"color":"'"$COLOR"'","message":"'"$(hostname) --> $MESSAGE"'","notify":"'"$NOTIFY"'","message_format":"text"}' -H 'Content-Type: application/json' $HIPCHAT_NOTIFY_URL
 	fi
 	if [ ! -z "$TELEGRAM_NOTIFY_URL" ]; then
-        curl --max-time 10 -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL
+        curl --max-time 10 -s -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL &>/dev/null
     fi
 }
 
@@ -389,7 +391,6 @@ function try_execution_x_times () {
 
 function build_target_for_domaene () {
 	command="make $MAKE_OPTS -j$CORES GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
-	echo $command
 	try_execution_x_times $RETRIES "$command"
 }
 
@@ -442,18 +443,12 @@ function build_selected_domains_and_selected_targets () {
 }
 
 
-echo "BUILD_OUTPUT_DIR_PREFIX_DOCKER_ENV: "$BUILD_OUTPUT_DIR_PREFIX_DOCKER_ENV
-echo "BUILD_GLUON_DIR_DOCKER_ENV: " $BUILD_GLUON_DIR_DOCKER_ENV
-echo "BUILD_SITE_DIR_DOCKER_ENV: " $BUILD_SITE_DIR_DOCKER_ENV
-echo "GLUON_TARGETS_DOCKER_ENV:" $GLUON_TARGETS_DOCKER_ENV
-
 process_arguments "$@"
 notify "green" "Build $GLUON_VERSION+$VERSION gestartet." true
 if running_in_docker 
 then 
 	notify "green" "docker cp $HOSTNAME:/usr/src/build/log <destination>" true
 fi
-
 
 build_make_opts
 prepare_repo "$GLUON_SITEDIR" $SITE_URL

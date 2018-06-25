@@ -14,7 +14,8 @@ ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
 ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de
 
 # ENV TELEGRAM_NOTIFY_CHATID_DOCKER_ENV=
-ENV TELEGRAM_AUTH_TOKEN=/usr/src/ChatAuthTokens/telegram.authToken
+ENV TELEGRAM_AUTH_TOKEN_DOCKER_ENV=/usr/src/ChatAuthTokens/telegram.authToken
+ENV TELEGRAM_CHAT_ID_DOCKER_ENV=/usr/src/ChatAuthTokens/telegram.chatID
 
 
 ENV DEBIAN_FRONTEND noninteractive

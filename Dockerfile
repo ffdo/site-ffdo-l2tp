@@ -11,7 +11,7 @@ ENV BUILD_GLUON_DIR_DOCKER_ENV /usr/src/build/gluon
 ENV BUILD_SITE_DIR_DOCKER_ENV /usr/src/build/site
 ENV BUILD_LOG_DIR_DOCKER_ENV /usr/src/build/log
 ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
-ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo/
+ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de
 
 # ENV TELEGRAM_NOTIFY_CHATID_DOCKER_ENV=
 ENV TELEGRAM_AUTH_TOKEN=/usr/src/ChatAuthTokens/telegram.authToken

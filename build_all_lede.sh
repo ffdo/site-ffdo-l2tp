@@ -3,7 +3,7 @@
 DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
 DEFAULT_BUILD_OUTPUT_DIR=${BUILD_OUTPUT_DIR_DOCKER_ENV:-'../build/'}
-DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV/:-'data/images.ffdo.de/ffdo/'}
+DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV/:-'data/images.ffdo.de'}
 DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
 DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
 
@@ -13,7 +13,7 @@ else
 	HIPCHAT_NOTIFY_URL=""
 fi
 if [ -f $TELEGRAM_AUTH_TOKEN ]; then
-	TELEGRAM_NOTIFY_URL="https://api.telegram.org/bot$(cat $TELEGRAM_AUTH_TOKEN)/sendMessage" #TELEGRAM_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für Telegram enthalten.
+	TELEGRAM_NOTIFY_URL="https://api.telegram.org/bot$(cat $TELEGRAM_AUTH_TOKEN)/sendMessage" 
 	TELEGRAM_NOTIFY_CHATID=${TELEGRAM_NOTIFY_CHATID_DOCKER_ENV:-''}
 else
 	TELEGRAM_NOTIFY_URL=""

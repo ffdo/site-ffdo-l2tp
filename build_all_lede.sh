@@ -3,7 +3,8 @@
 DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
 DEFAULT_BUILD_OUTPUT_DIR=${BUILD_OUTPUT_DIR_DOCKER_ENV:-'../build/'}
-DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV/:-'data/images.ffdo.de'}
+DEFAULT_LOG_DIR=${BUILD_LOG_DIR_DOCKER_ENV-'../log/'}
+DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV:-'data/images.ffdo.de'}
 DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
 DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
 
@@ -35,11 +36,34 @@ RETRIES=""
 SKIP_GLUON_PREBUILD_ACTIONS=""
 FORCE_DIR_CLEAN=""
 BUILD_OUTPUT_DIR=""
+BUILD_LOG_DIR=""
 imagedir=""
 modulesdir=""
 
 function expand_relativ_path () {
 	echo ${1/../$(dirname $(pwd))}
+}
+
+function create_logfile_name() {
+	action=$1
+	index=$2
+	logfilename=""
+
+	if [[ ! $CUR_BUILD_DOMAIN == "" ]]
+	then
+		logfilename=$logfilename$CUR_BUILD_DOMAIN"-"
+	fi
+	if [[ ! $CUR_BUILD_TARGET == "" ]]
+	then
+		logfilename=$logfilename$CUR_BUILD_TARGET"-"
+	fi
+	logfilename=$logfilename$action
+	if [[ $index -gt 0 ]]
+	then
+		logfilename=$logfilename"-"$index
+	fi
+	logfilename=$logfilename".log"
+	echo "$BUILD_LOG_DIR/$logfilename"
 }
 
 function set_arguments_not_passed () {
@@ -53,9 +77,12 @@ function set_arguments_not_passed () {
 	RETRIES=${RETRIES:-1}
 	SKIP_GLUON_PREBUILD_ACTIONS=${SKIP_GLUON_PREBUILD_ACTIONS:-0}
 	BUILD_OUTPUT_DIR=${DEFAULT_BUILD_OUTPUT_DIR}
+	BUILD_LOG_DIR=${DEFAULT_LOG_DIR:-'.'}
+
 
 	GLUON_OUTPUTDIR_PREFIX=$(expand_relativ_path "$GLUON_OUTPUTDIR_PREFIX")
 	BUILD_OUTPUT_DIR=$(expand_relativ_path "$BUILD_OUTPUT_DIR")
+	BUILD_LOG_DIR=$(expand_relativ_path "$BUILD_LOG_DIR")
 	GLUON_GLUONDIR=$(expand_relativ_path "$GLUON_GLUONDIR")
 	GLUON_SITEDIR=$(expand_relativ_path "$GLUON_SITEDIR")
 	GLUON_IMAGEDIR=$(expand_relativ_path "$GLUON_IMAGEDIR")
@@ -112,8 +139,8 @@ function notify () {
 		curl -d '{"color":"'"$COLOR"'","message":"'"$(hostname) --> $MESSAGE"'","notify":"'"$NOTIFY"'","message_format":"text"}' -H 'Content-Type: application/json' $HIPCHAT_NOTIFY_URL
 	fi
 	if [ ! -z "$TELEGRAM_NOTIFY_URL" ]; then
-        curl --max-time 10 -s -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL &>/dev/null
-    fi
+		curl --max-time 10 -s -d "chat_id=$TELEGRAM_NOTIFY_CHATID&text=$MESSAGE" $TELEGRAM_NOTIFY_URL &>/dev/null
+	fi
 }
 
 function enable_debugging () {
@@ -287,7 +314,8 @@ function git_fetch () {
 
 function git_checkout () {
 	command="git -C \"$1\" checkout $2"
-	try_execution_x_times $RETRIES "$command"
+	title="git-checkout-"$(basename "$1")"-$2"
+	try_execution_x_times $RETRIES "$title" "$command"
 }
 
 function git_pull () {
@@ -305,12 +333,12 @@ function prepare_repo () {
 
 function force_dir_clean () {
 	command="make dirclean $MAKE_OPTS"
-	try_execution_x_times $RETRIES "$command"
+	try_execution_x_times $RETRIES "make-dirclean" "$command"
 }
 
 function gluon_prepare_buildprocess () {
 	command="make update ${MAKE_OPTS}"
-	try_execution_x_times $RETRIES "$command"
+	try_execution_x_times $RETRIES "make-update" "$command"
 	if [[ $FORCE_DIR_CLEAN=="1" ]]
 	then
 		force_dir_clean
@@ -319,7 +347,7 @@ function gluon_prepare_buildprocess () {
 	for target in $TARGETS_TO_BUILD
 	do
 		command="make clean $MAKE_OPTS -j$CORES GLUON_TARGET=$target GLUON_IMAGEDIR=$imagedir"
-		try_execution_x_times $RETRIES "$command"
+		try_execution_x_times $RETRIES "make-clean" "$command"
 	done
 	mkdir -p "$GLUON_GLUONDIR/tmp"
 	mkdir tmp
@@ -374,11 +402,16 @@ function check_domains () {
 function try_execution_x_times () {
 	tries_left=$1
 	shift
+    log_title=$1
+    shift
 	return_value=1
+	index=0
 	while [[ $return_value != 0 && $tries_left -gt 0 ]]
 	do
 		let tries_left-=1
-		echo "$@" | bash
+		logfile=$(create_logfile_name "$log_title" $index)
+		echo "$@" | (bash &>> "$logfile")
+		let index+=1
 		return_value=$?
 	done
 	if [[ ! $return_value == 0 ]]
@@ -391,13 +424,14 @@ function try_execution_x_times () {
 
 function build_target_for_domaene () {
 	command="make $MAKE_OPTS -j$CORES GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
-	try_execution_x_times $RETRIES "$command"
+	try_execution_x_times $RETRIES "make-build" "$command"
 }
 
 function make_manifests () {
-	make manifest $MAKE_OPTS GLUON_BRANCH=experimental GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
-	make manifest $MAKE_OPTS GLUON_BRANCH=beta GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
-	make manifest $MAKE_OPTS GLUON_BRANCH=stable GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
+	logfile=$(create_logfile_name "make-manifest" 0)
+	( make manifest $MAKE_OPTS GLUON_BRANCH=experimental GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir";
+		make manifest $MAKE_OPTS GLUON_BRANCH=beta GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir"
+		make manifest $MAKE_OPTS GLUON_BRANCH=stable GLUON_PRIORITY=0 GLUON_IMAGEDIR="$imagedir" ) > "$logfile"
 }
 
 
@@ -422,6 +456,7 @@ function build_selected_targets_for_domaene () {
 		notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET fertig." false
 	done
 	
+	CUR_BUILD_TARGET=""
 	create_checksumfile_in_dir "$imagedir"/factory
 	create_checksumfile_in_dir "$imagedir"/sysupgrade
 # TODO:
@@ -440,22 +475,30 @@ function build_selected_domains_and_selected_targets () {
 		notify "purple" "$CUR_BUILD_DOMAIN fertig." false
 		DO_CLEAN_BEFORE_BUILD=0
 	done
+	CUR_BUILD_DOMAIN=""
 }
+
 
 
 process_arguments "$@"
 notify "green" "Build $GLUON_VERSION+$VERSION gestartet." true
 if running_in_docker 
 then 
-	notify "green" "docker cp $HOSTNAME:/usr/src/build/log <destination>" true
+	notify "green" "docker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
+	notify "green" "Während des Bauens kannst du die Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
 fi
 
 build_make_opts
+mkdir -p "$BUILD_LOG_DIR" &>/dev/null
+echo $BUILD_LOG_DIR 
+
+
 prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
 check_targets
 check_domains
+
 
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
@@ -469,8 +512,9 @@ then
 	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." true
 	if running_in_docker 
 	then 
-		force_dir_clean
-		notify "green" "docker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
+		force_dir_clean # frees some bytes 
+		notify "green" "Du kannst die erzeugten Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
+		notify "green" "Du kannst die erstellte Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
 	fi
 fi
 

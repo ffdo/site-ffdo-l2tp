@@ -1,8 +1,8 @@
 FROM debian:stretch
 MAINTAINER Cajus Kamer <Cajus.Kamer@arcor.de>
 
-ENV GLUON_TAG_DOCKER_ENV v2017.1.7
-ENV GLUON_RELEASE_DOCKER_ENV 2.0.1
+ENV GLUON_TAG_DOCKER_ENV v2017.1.8
+ENV GLUON_RELEASE_DOCKER_ENV 2.0.2
 
 ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik mpc85xx-generic ramips-mt7621 x86-generic x86-64 
 # ENV DOMAINS_TO_BUILD_DOCKER_ENV Domäne-01 Domäne-02 Domäne-03 Domäne-04 Domäne-05 Domäne-06 Domäne-07 Domäne-08 Domäne-09 Domäne-09 Domäne-10 Domäne-11

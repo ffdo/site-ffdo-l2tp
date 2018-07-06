@@ -121,13 +121,16 @@ function notify () {
 			CCODE="\033[31m"
 			;;
 		yellow)
-			CCODE="\093[33m"
+			CCODE="\033[33m"
 			;;
 		purple)
-			CCODE="\095[35m" # ok, bright magenta. Near enough
+			CCODE="\033[95m" # ok, bright magenta. Near enough
 			;;
 		green)
 			CCODE="\033[32m"
+			;;
+		blue)
+			CCODE="\033[34m"
 			;;
 		*)
 			CCODE=""
@@ -489,16 +492,13 @@ then
 fi
 
 build_make_opts
-mkdir -p "$BUILD_LOG_DIR" &>/dev/null
-echo $BUILD_LOG_DIR 
-
+mkdir -p "$BUILD_LOG_DIR" &>/dev/null 
 
 prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
 check_targets
 check_domains
-
 
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
@@ -513,8 +513,8 @@ then
 	if running_in_docker 
 	then 
 		force_dir_clean # frees some bytes 
-		notify "green" "Du kannst die erzeugten Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
-		notify "green" "Du kannst die erstellte Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
+		notify "green" "Du kannst die Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
+		notify "green" "Du kannst die Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
 	fi
 fi
 

@@ -260,7 +260,7 @@ function process_arguments () {
 
 function build_make_opts () {
 
-	MAKE_OPTS="-C $GLUON_GLUONDIR GLUON_RELEASE=$GLUON_VERSION+$VERSION GLUON_SITEDIR=$GLUON_SITEDIR V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
+	MAKE_OPTS="-C $GLUON_GLUONDIR GLUON_RELEASE=$VERSION GLUON_SITEDIR=$GLUON_SITEDIR V=s $BROKEN FORCE_UNSAFE_CONFIGURE=1"
 }
 
 function is_git_repo () {
@@ -484,7 +484,7 @@ function build_selected_domains_and_selected_targets () {
 
 
 process_arguments "$@"
-notify "green" "Build $GLUON_VERSION+$VERSION gestartet." true
+notify "green" "Build Firmware Version $VERSION ($GLUON_VERSION) gestartet." true
 if running_in_docker 
 then 
 	notify "green" "docker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
@@ -492,7 +492,7 @@ then
 fi
 
 build_make_opts
-mkdir -p "$BUILD_LOG_DIR" &>/dev/null 
+mkdir -p "$BUILD_LOG_DIR" &>/dev/null
 
 prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
@@ -509,7 +509,7 @@ then
 		gluon_prepare_buildprocess
 	fi
 	build_selected_domains_and_selected_targets
-	notify "green" "Build $GLUON_VERSION+$VERSION abgeschlossen." true
+	notify "green" "Build Firmware Version $VERSION ($GLUON_VERSION) abgeschlossen." true
 	if running_in_docker 
 	then 
 		force_dir_clean # frees some bytes 

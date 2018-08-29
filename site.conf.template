@@ -24,7 +24,7 @@
 
 	-- opkg = {
 	-- 	extra = {
-	-- 		gluon = 'http://update.services.ffdo.de/domaene%%DOMAIN_INDEX%%/releases/%GR/modules/%S',
+	-- 		gluon = 'http://update.services.ffdo.de/ffdo_ng/domaenen/domaene%%DOMAIN_INDEX%%/releases/%GR/modules/%S',
 	-- 	},
 	-- },
 
@@ -87,7 +87,7 @@
 			stable = {
 				name = 'stable',
 				mirrors = {
-					'http://update.services.ffdo.de/domaene%%DOMAIN_INDEX%%/stable/images/sysupgrade',
+					'http://update.services.ffdo.de/ffdo_ng/domaenen/domaene%%DOMAIN_INDEX%%/stable/images/sysupgrade',
 				},
 				probability = 0.08,
 				good_signatures = 2,
@@ -103,7 +103,7 @@
 			beta = {
 				name = 'beta',
 				mirrors = {
-					'http://update.services.ffdo.de/domaene%%DOMAIN_INDEX%%/beta/images/sysupgrade'
+					'http://update.services.ffdo.de/ffdo_ng/domaenen/domaene%%DOMAIN_INDEX%%/beta/images/sysupgrade'
 				},
 				probability = 0.08,
 				good_signatures = 2,
@@ -118,7 +118,7 @@
 			},
 			experimental = {
 				name = 'experimental',
-				mirrors = {'http://update.services.ffdo.de/domaene%%DOMAIN_INDEX%%/experimental/images/sysupgrade'},
+				mirrors = {'http://update.services.ffdo.de/ffdo_ng/domaenen/domaene%%DOMAIN_INDEX%%/experimental/images/sysupgrade'},
 				probability = 0.08,
 				good_signatures = 1,
 				pubkeys = {

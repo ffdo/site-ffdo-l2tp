@@ -4,8 +4,8 @@
 	site_code = 'ffdo-d%%DOMAIN_INDEX%%',
 
 	-- site_seed = 'c1b2f463dd1e2c032ba07b82b72eea3a07fb8aca7a7e0b82859481ac2f4c231a',
-	prefix4 = '%%DOMAIN_IP_NET4%%.0/21',
-	prefix6 = '%%DOMAIN_IP_NET6%%::/64',
+	prefix4 = '%%DOMAIN_IPV4_NET%%',
+	prefix6 = '%%DOMAIN_IPV6_NET%%',
 
 	-- timezone
 	timezone = 'CET-1CEST,M3.5.0,M10.5.0/3', -- Europe/Berlin
@@ -59,8 +59,8 @@
 
 
 	next_node = {
-		ip4 = '%%DOMAIN_IP_NET4%%.254',
-		ip6 = '%%DOMAIN_IP_NET6%%::ffd0',
+		ip4 = '%%DOMAIN_IPV4_ADR%%',
+		ip6 = '%%DOMAIN_IPV6_ADR%%',
 		mac = '02:ff:d0:09:ff:02',
 	},
 

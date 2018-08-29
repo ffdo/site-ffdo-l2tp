@@ -32,10 +32,10 @@ SITE_NAME_LIST=( "Test und Dev" \
 
 while [ "$1" != '' ] ; do
   if [ $1 -le 0 ] ; then 
-    echo bad number; min 1 is allowed
+    echo invalid domain number; min 1 is allowed
   else 
-    if [ $1 -ge 17 ] ; then 
-      echo bad number: max. 16 is allowd
+    if [ $1 -ge 255 ] ; then
+      echo invalid domain number: max. 254 is allowed
     else 
       index=$(expr \( $1 - 1 \) )
       
@@ -51,12 +51,17 @@ while [ "$1" != '' ] ; do
       
       formated_index=$(printf '%02d' "$1")
       hex_val=$(printf '%02x' "$1")
-      ip4net=$(printf '10.233.%02d' "$(expr 128 + 8 \* $index )")
-      ip6net=$(printf '2a03:2260:300a:%04x' "$(expr 8192 + 256 \* $index )")
-
+      ip4netbase=$(printf '10.%02d' $1)
+      ip4net=$ip4netbase".0.0\/16"
+      ip4adress="$ip4netbase.255.254"
+      ip6netbase=$(printf '2a03:2260:300a:%04x' $1)
+      ip6net=$ip6netbase"::\/64"
+      ip6adress="$ip6netbase::ffd0"
       /bin/sed \
-		-e "s/%%DOMAIN_IP_NET4%%/$ip4net/g" \
-		-e "s/%%DOMAIN_IP_NET6%%/$ip6net/g" \
+		-e "s/%%DOMAIN_IPV4_NET%%/$ip4net/g" \
+		-e "s/%%DOMAIN_IPV4_ADR%%/$ip4adress/g" \
+		-e "s/%%DOMAIN_IPV6_NET%%/$ip6net/g" \
+		-e "s/%%DOMAIN_IPV6_ADR%%/$ip6adress/g" \
 		-e "s/%%DOMAIN_INDEX%%/$formated_index/g" \
 		-e "s/%%DOMAIN_HEX_INDEX%%/$hex_val/g" \
 		-e "s/%%DOMAIN_PREFIX%%/$domain_prefix/g" \

@@ -31,7 +31,6 @@
 	-- regulatory domain of your wifi
 	wifi24 = {
 		channel = 1,
-
 		-- remove 802.11b compatibility
 		supported_rates = {6000, 9000, 12000, 18000, 24000, 36000, 48000, 54000},
 		basic_rate = {6000, 9000, 18000, 36000, 54000},
@@ -57,7 +56,6 @@
 		},
 	},
 
-
 	next_node = {
 		ip4 = '%%DOMAIN_IPV4_ADR%%',
 		ip6 = '%%DOMAIN_IPV6_ADR%%',
@@ -71,6 +69,8 @@
 			brokers = {
 				'snng-dtm01.ffdo.de:200%%DOMAIN_INDEX%%',
 				'snng-dtm02.ffdo.de:200%%DOMAIN_INDEX%%',
+				'snng-ber01.ffdo.de:200%%DOMAIN_INDEX%%',
+				'snng-ber02.ffdo.de:200%%DOMAIN_INDEX%%',
 			},
 		},
 		
@@ -138,5 +138,4 @@
 			show_altitude = false,
 		},
 	},
-
 }

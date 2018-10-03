@@ -1,17 +1,16 @@
 FROM debian:stretch
 MAINTAINER Cajus Kamer <Cajus.Kamer@arcor.de>
 
-ENV GLUON_TAG_DOCKER_ENV v2017.1.8
-ENV GLUON_RELEASE_DOCKER_ENV 2.0.4
+ENV GLUON_TAG_DOCKER_ENV v2018.1.1
+ENV GLUON_RELEASE_DOCKER_ENV 2.1.0
 
 ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik mpc85xx-generic ramips-mt7621 x86-generic x86-64 
-# ENV DOMAINS_TO_BUILD_DOCKER_ENV Domäne-01 Domäne-02 Domäne-03 Domäne-04 Domäne-05 Domäne-06 Domäne-07 Domäne-08 Domäne-09 Domäne-09 Domäne-10 Domäne-11
 
 ENV BUILD_GLUON_DIR_DOCKER_ENV /usr/src/build/gluon
 ENV BUILD_SITE_DIR_DOCKER_ENV /usr/src/build/site
 ENV BUILD_LOG_DIR_DOCKER_ENV /usr/src/build/log
 ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
-ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo_ng/domaenen
+ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo_ng
 
 # ENV TELEGRAM_NOTIFY_CHATID_DOCKER_ENV=
 ENV TELEGRAM_AUTH_TOKEN_DOCKER_ENV=/usr/src/ChatAuthTokens/telegram.authToken

@@ -22,13 +22,12 @@ else
 fi
 
 GLUON_VERSION=${GLUON_TAG_DOCKER_ENV:-''}
+SITE_VERSION=${SITE_TAG_DOCKER_ENV:-''}
 VERSION=${GLUON_RELEASE_DOCKER_ENV:-''}
 TARGETS_TO_BUILD=""
 CUR_BUILD_TARGET=""
 CORES=""
 MAKE_OPTS=""
-DOMAINS_TO_BUILD=""
-CUR_BUILD_DOMAIN=""
 SITE_URL=""
 GLUON_URL=""
 BROKEN=""
@@ -49,10 +48,6 @@ function create_logfile_name() {
 	index=$2
 	logfilename=""
 
-	if [[ ! $CUR_BUILD_DOMAIN == "" ]]
-	then
-		logfilename=$logfilename$CUR_BUILD_DOMAIN"-"
-	fi
 	if [[ ! $CUR_BUILD_TARGET == "" ]]
 	then
 		logfilename=$logfilename$CUR_BUILD_TARGET"-"
@@ -150,10 +145,6 @@ function enable_debugging () {
 	set -x
 }
 
-function add_domain_to_buildprocess () {
-	DOMAINS_TO_BUILD="$DOMAINS_TO_BUILD $1"
-}
-
 function add_target_to_buildprocess () {
 	TARGETS_TO_BUILD="$TARGETS_TO_BUILD $1"
 }
@@ -215,10 +206,6 @@ function process_arguments () {
 				;;
 			-S|--skip-gluon-prebuilds)
 				SKIP_GLUON_PREBUILD_ACTIONS=1
-				;;
-			-d*|--domain*)
-				add_domain_to_buildprocess $value
-				shift
 				;;
 			-t*|--target*)
 				add_target_to_buildprocess $value
@@ -290,7 +277,6 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 	-D --enable-debugging: Enables debugging by setting "set -x". This must be the first parameter, if you want to debug the parameter parsing.
 	-B --enable-broken: Enable the building of broken targets and broken images.
 	-S --skip-gluon-prebuilds: Skip make dirclean of Gluon folder. 
-	-d --domain: Branches of your site-Git-repository to build. If left empty, all Domäne-XX will be build. This parameter can be used multiple times or you can set multiple branches at once, seperated by space and in quotes: "branch1 branch2 branch3".
 	-t*|--target: Targets to build. If left empty, all targets will be build. If broken is set, even those will be build. This parameter can be used multiple times or you can set multiple targets at once, seperated by space and in quotes: "target1 target2 target3".
 	-f --force-dir-clean: Force a make dir clean after each target.
 
@@ -372,33 +358,17 @@ function check_targets () {
 	fi
 }
 
-function get_all_domains_from_site_repo () {
-	echo `git -C "$GLUON_SITEDIR" branch -a|grep -v HEAD|grep origin/Domäne| sed -e 's/.*\/Domäne/Domäne/'`
-}
-
 function create_checksumfile_in_dir () {
 	chks_dir=$(expand_relativ_path "$1")
 	if is_folder "$chks_dir"
 	then 
-		echo "$CUR_BUILD_DOMAIN: Creating SHA512 sums in: "$(basename "$chks_dir")
+		echo "Creating SHA512 sums in: "$(basename "$chks_dir")
 		MYPWD=$(pwd)
 		cd "$chks_dir"
 		sha512sum * > ./sha512sum.txt
 		cd $MYPWD
 	else 
 		echo "Creating SHA512 sums: Directory $chks_dir does not exist."
-	fi
-}
-
-function check_domains () {
-	if [[ $DOMAINS_TO_BUILD == "" ]]
-	then
-		if [[ $DOMAINS_TO_BUILD_DOCKER_ENV == "" ]]
-		then
-			DOMAINS_TO_BUILD=$(get_all_domains_from_site_repo)
-		else 
-			DOMAINS_TO_BUILD=$DOMAINS_TO_BUILD_DOCKER_ENV
-		fi
 	fi
 }
 
@@ -425,7 +395,7 @@ function try_execution_x_times () {
 	fi
 }
 
-function build_target_for_domaene () {
+function build_target () {
 	command="make $MAKE_OPTS -j$CORES GLUON_BRANCH=stable GLUON_TARGET=$1 GLUON_IMAGEDIR=\"$imagedir\""
 	try_execution_x_times $RETRIES "make-build" "$command"
 }
@@ -438,10 +408,9 @@ function make_manifests () {
 }
 
 
-function build_selected_targets_for_domaene () {
-	prefix=`echo $1|sed -e 's/Domäne-/domaene/'`
-	imagedir="$GLUON_OUTPUTDIR_PREFIX"/"$prefix"/releases/$VERSION/images
-	modulesdir="$GLUON_OUTPUTDIR_PREFIX"/"$prefix"/releases/$VERSION/modules
+function build_selected_targets () {
+	imagedir="$GLUON_OUTPUTDIR_PREFIX"/releases/$VERSION/images
+	modulesdir="$GLUON_OUTPUTDIR_PREFIX"/releases/$VERSION/modules
 	mkdir -p "$imagedir"
 #	mkdir -p "$modulesdir"
 	git_checkout "$GLUON_SITEDIR" $1
@@ -451,12 +420,12 @@ function build_selected_targets_for_domaene () {
 	do
 		if [[ $DO_CLEAN_BEFORE_BUILD == "1" ]]
 		then
-			notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET säubern." false
+			notify "yellow" "Target $CUR_BUILD_TARGET säubern." false
 			make clean $MAKE_OPTS GLUON_BRANCH=stable GLUON_TARGET=$CUR_BUILD_TARGET 
 		fi
-		notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET gestartet." false
-		build_target_for_domaene $CUR_BUILD_TARGET
-		notify "yellow" "$CUR_BUILD_DOMAIN Target $CUR_BUILD_TARGET fertig." false
+		notify "yellow" "Target $CUR_BUILD_TARGET gestartet." false
+		build_target $CUR_BUILD_TARGET
+		notify "yellow" "Target $CUR_BUILD_TARGET fertig." false
 	done
 	
 	CUR_BUILD_TARGET=""
@@ -468,20 +437,6 @@ function build_selected_targets_for_domaene () {
 #	create_checksumfile_in_dir "$modulesdir"/
 	make_manifests
 }
-
-function build_selected_domains_and_selected_targets () {
-	DO_CLEAN_BEFORE_BUILD=0
-	for CUR_BUILD_DOMAIN in $DOMAINS_TO_BUILD
-	do
-		notify "purple" "$CUR_BUILD_DOMAIN gestartet." false
-		build_selected_targets_for_domaene $CUR_BUILD_DOMAIN
-		notify "purple" "$CUR_BUILD_DOMAIN fertig." false
-		DO_CLEAN_BEFORE_BUILD=0
-	done
-	CUR_BUILD_DOMAIN=""
-}
-
-
 
 process_arguments "$@"
 notify "green" "Build Firmware Version $VERSION ($GLUON_VERSION) gestartet." true
@@ -498,23 +453,18 @@ prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
 check_targets
-check_domains
 
-if [[ ! $DOMAINS_TO_BUILD == "" ]]
+git_checkout "$GLUON_SITEDIR" $SITE_VERSION
+
+if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
 then
-	arr=($DOMAINS_TO_BUILD)
-	git_checkout "$GLUON_SITEDIR" "${arr[0]}"
-	if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
-	then
-		gluon_prepare_buildprocess
-	fi
-	build_selected_domains_and_selected_targets
-	notify "green" "Build Firmware Version $VERSION ($GLUON_VERSION) abgeschlossen." true
-	if running_in_docker 
-	then 
-		force_dir_clean # frees some bytes 
-		notify "green" "Du kannst die Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
-		notify "green" "Du kannst die Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
-	fi
+    gluon_prepare_buildprocess
 fi
-
+build_selected_targets
+notify "green" "Build Firmware Version $VERSION ($GLUON_VERSION) abgeschlossen." true
+if running_in_docker
+then
+    force_dir_clean # frees some bytes
+    notify "green" "Du kannst die Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
+    notify "green" "Du kannst die Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
+fi

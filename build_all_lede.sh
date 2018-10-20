@@ -1,6 +1,5 @@
 #!/bin/bash
 
-DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
 DEFAULT_BUILD_OUTPUT_DIR=${BUILD_OUTPUT_DIR_DOCKER_ENV:-'../build/'}
 DEFAULT_LOG_DIR=${BUILD_LOG_DIR_DOCKER_ENV-'../log/'}
@@ -22,13 +21,11 @@ else
 fi
 
 GLUON_VERSION=${GLUON_TAG_DOCKER_ENV:-''}
-SITE_VERSION=${SITE_TAG_DOCKER_ENV:-''}
 VERSION=${GLUON_RELEASE_DOCKER_ENV:-''}
 TARGETS_TO_BUILD=""
 CUR_BUILD_TARGET=""
 CORES=""
 MAKE_OPTS=""
-SITE_URL=""
 GLUON_URL=""
 BROKEN=""
 RETRIES=""
@@ -67,7 +64,6 @@ function set_arguments_not_passed () {
 	GLUON_OUTPUTDIR_PREFIX=${GLUON_OUTPUTDIR_PREFIX:-$DEFAULT_GLUON_OUTPUTDIR_PREFIX}
 #	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
 	CORES=${CORES:-$(expr $(nproc) + 1)}
-	SITE_URL=${SITE_URL:-$DEFAULT_SITE_URL}
 	GLUON_URL=${GLUON_URL:-$DEFAULT_GLUON_URL}
 	RETRIES=${RETRIES:-1}
 	SKIP_GLUON_PREBUILD_ACTIONS=${SKIP_GLUON_PREBUILD_ACTIONS:-0}
@@ -191,10 +187,6 @@ function process_arguments () {
 				GLUON_URL=$value
 				shift
 				;;
-			--site-url*)
-				SITE_URL=$value
-				shift
-				;;
 			-D|--enable-debugging)
 				enable_debugging
 				;;
@@ -273,7 +265,6 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 	-s --site-dir: Path to the site config. Default is "../site".
 	-o --output-prefix: Prefix for output folder, default is "/var/www/html".
 	--gluon-url: URL to Gluon repository, default is "https://github.com/freifunk-gluon/gluon.git".
-	--site-url: URL to the site configuration. Default is site-ffdo-l2tp of Freifunk Dortmund.
 	-D --enable-debugging: Enables debugging by setting "set -x". This must be the first parameter, if you want to debug the parameter parsing.
 	-B --enable-broken: Enable the building of broken targets and broken images.
 	-S --skip-gluon-prebuilds: Skip make dirclean of Gluon folder. 
@@ -413,8 +404,6 @@ function build_selected_targets () {
 	modulesdir="$GLUON_OUTPUTDIR_PREFIX"/releases/$VERSION/modules
 	mkdir -p "$imagedir"
 #	mkdir -p "$modulesdir"
-	git_checkout "$GLUON_SITEDIR" $1
-	git_pull "$GLUON_SITEDIR"
 	
 	for CUR_BUILD_TARGET in $TARGETS_TO_BUILD
 	do
@@ -449,12 +438,9 @@ fi
 build_make_opts
 mkdir -p "$BUILD_LOG_DIR" &>/dev/null
 
-prepare_repo "$GLUON_SITEDIR" $SITE_URL
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
 check_targets
-
-git_checkout "$GLUON_SITEDIR" $SITE_VERSION
 
 if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
 then

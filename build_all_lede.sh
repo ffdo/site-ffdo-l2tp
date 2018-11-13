@@ -13,7 +13,10 @@ if [ -f HIPCHAT_AUTH_TOKEN ]; then
 else
 	HIPCHAT_NOTIFY_URL=""
 fi
-if [ -f $TELEGRAM_AUTH_TOKEN_DOCKER_ENV ] && [ -f $TELEGRAM_CHAT_ID_DOCKER_ENV ]; then
+
+DEFAULT_TELEGRAM_AUTH_TOKEN_FILE=${TELEGRAM_AUTH_TOKEN_DOCKER_ENV:-$(dirname $(pwd))'/ChatAuthTokens/telegram.authToken'}
+DEFAULT_TELEGRAM_CHAT_ID_FILE=${TELEGRAM_CHAT_ID_DOCKER_ENV:-$(dirname $(pwd))'/ChatAuthTokens/telegram.chatID'}
+if [ -f $DEFAULT_TELEGRAM_AUTH_TOKEN_FILE ] && [ -f $DEFAULT_TELEGRAM_CHAT_ID_FILE ]; then
 	TELEGRAM_NOTIFY_URL="https://api.telegram.org/bot$(cat $TELEGRAM_AUTH_TOKEN_DOCKER_ENV)/sendMessage" 
 	TELEGRAM_NOTIFY_CHATID=$(cat "$TELEGRAM_CHAT_ID_DOCKER_ENV")
 else

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-DEFAULT_SITE_URL="https://github.com/ffdo/site-ffdo-l2tp.git"
 DEFAULT_GLUON_URL="https://github.com/freifunk-gluon/gluon.git"
 DEFAULT_BUILD_OUTPUT_DIR=${BUILD_OUTPUT_DIR_DOCKER_ENV:-'../build/'}
 DEFAULT_LOG_DIR=${BUILD_LOG_DIR_DOCKER_ENV-'../log/'}
 DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV:-'data/images.ffdo.de'}
 DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
 DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
+DEFAULT_GLUON_ALL_SITES_DIR=${BUILD_ALL_SITES_DIR_DOCKER_ENV:-$(pwd)'/sites'}
 
 if [ -f HIPCHAT_AUTH_TOKEN ]; then
 	HIPCHAT_NOTIFY_URL="https://hc.infrastruktur.ms/v2/room/34/notification?auth_token=$(cat HIPCHAT_AUTH_TOKEN)" # HIPCHAT_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für HipChat enthalten.
@@ -32,7 +32,6 @@ CORES=""
 MAKE_OPTS=""
 DOMAINS_TO_BUILD=""
 CUR_BUILD_DOMAIN=""
-SITE_URL=""
 GLUON_URL=""
 BROKEN=""
 RETRIES=""
@@ -72,10 +71,10 @@ function create_logfile_name() {
 function set_arguments_not_passed () {
 	GLUON_GLUONDIR=${GLUON_GLUONDIR:-$DEFAULT_GLUON_DIR}
 	GLUON_SITEDIR=${GLUON_SITEDIR:-$DEFAULT_GLUON_SITEDIR}
+	GLUON_ALL_SITES_DIR=${GLUON_ALL_SITES_DIR:-$DEFAULT_GLUON_ALL_SITES_DIR}
 	GLUON_OUTPUTDIR_PREFIX=${GLUON_OUTPUTDIR_PREFIX:-$DEFAULT_GLUON_OUTPUTDIR_PREFIX}
 #	CORES=${CORES:-$(grep -ic 'model name' /proc/cpuinfo)}
 	CORES=${CORES:-$(expr $(nproc) + 1)}
-	SITE_URL=${SITE_URL:-$DEFAULT_SITE_URL}
 	GLUON_URL=${GLUON_URL:-$DEFAULT_GLUON_URL}
 	RETRIES=${RETRIES:-1}
 	SKIP_GLUON_PREBUILD_ACTIONS=${SKIP_GLUON_PREBUILD_ACTIONS:-0}
@@ -88,6 +87,7 @@ function set_arguments_not_passed () {
 	BUILD_LOG_DIR=$(expand_relativ_path "$BUILD_LOG_DIR")
 	GLUON_GLUONDIR=$(expand_relativ_path "$GLUON_GLUONDIR")
 	GLUON_SITEDIR=$(expand_relativ_path "$GLUON_SITEDIR")
+	DEFAULT_GLUON_ALL_SITES_DIR=$(expand_relativ_path "$DEFAULT_GLUON_ALL_SITES_DIR")
 	GLUON_IMAGEDIR=$(expand_relativ_path "$GLUON_IMAGEDIR")
 	FORCE_DIR_CLEAN=${FORCE_DIR_CLEAN:-0}
 }
@@ -154,7 +154,12 @@ function enable_debugging () {
 }
 
 function add_domain_to_buildprocess () {
-	DOMAINS_TO_BUILD="$DOMAINS_TO_BUILD $1"
+	if [[ $DOMAINS_TO_BUILD == "" ]]
+	then 
+		DOMAINS_TO_BUILD="$1"
+	else
+		DOMAINS_TO_BUILD="$DOMAINS_TO_BUILD $1"
+	fi
 }
 
 function add_target_to_buildprocess () {
@@ -195,16 +200,16 @@ function process_arguments () {
 				GLUON_SITEDIR=$value
 				shift
 				;;
+			-l*|--log-dir*)
+				BUILD_LOG_DIR=$value
+				shift
+				;;
 			-o*|--output-prefix*)
 				GLUON_OUTPUTDIR_PREFIX=$value
 				shift
 				;;
 			--gluon-url*)
 				GLUON_URL=$value
-				shift
-				;;
-			--site-url*)
-				SITE_URL=$value
 				shift
 				;;
 			-D|--enable-debugging)
@@ -287,9 +292,9 @@ All parameters can be set in one of the following ways: -e <value>, -e<value>, -
 
 	-g --gluon-dir: Path to Gluon-Git-Folder. Default is "../gluon".
 	-s --site-dir: Path to the site config. Default is "../site".
+	-l --log-dir: Path to save build logging.  Default is "../log".
 	-o --output-prefix: Prefix for output folder, default is "/var/www/html".
 	--gluon-url: URL to Gluon repository, default is "https://github.com/freifunk-gluon/gluon.git".
-	--site-url: URL to the site configuration. Default is site-ffdo-l2tp of Freifunk Dortmund.
 	-D --enable-debugging: Enables debugging by setting "set -x". This must be the first parameter, if you want to debug the parameter parsing.
 	-B --enable-broken: Enable the building of broken targets and broken images.
 	-S --skip-gluon-prebuilds: Skip make dirclean of Gluon folder. 
@@ -326,6 +331,17 @@ function git_checkout () {
 
 function git_pull () {
 	git -C "$1" pull
+}
+
+function set_sitedir() {
+# 	mkdir "$GLUON_SITEDIR"
+	if is_folder "$GLUON_SITEDIR"
+	then
+		rm -rf "$GLUON_SITEDIR"
+	fi	
+	echo "cp -r  $DEFAULT_GLUON_ALL_SITES_DIR/$1 $GLUON_SITEDIR"
+	mkdir "$GLUON_SITEDIR"
+	cp -r "$DEFAULT_GLUON_ALL_SITES_DIR/$1"/* "$GLUON_SITEDIR/"
 }
 
 function prepare_repo () {
@@ -375,10 +391,6 @@ function check_targets () {
 	fi
 }
 
-function get_all_domains_from_site_repo () {
-	echo `git -C "$GLUON_SITEDIR" branch -a|grep -v HEAD|grep origin/Domäne| sed -e 's/.*\/Domäne/Domäne/'`
-}
-
 function create_checksumfile_in_dir () {
 	chks_dir=$(expand_relativ_path "$1")
 	if is_folder "$chks_dir"
@@ -398,7 +410,10 @@ function check_domains () {
 	then
 		if [[ $DOMAINS_TO_BUILD_DOCKER_ENV == "" ]]
 		then
-			DOMAINS_TO_BUILD=$(get_all_domains_from_site_repo)
+			for entry in "$GLUON_ALL_SITES_DIR"/*
+			do
+				add_domain_to_buildprocess "$(basename "$entry")"
+			done
 		else 
 			DOMAINS_TO_BUILD=$DOMAINS_TO_BUILD_DOCKER_ENV
 		fi
@@ -447,8 +462,7 @@ function build_selected_targets_for_domaene () {
 	modulesdir="$GLUON_OUTPUTDIR_PREFIX"/"$prefix"/releases/$VERSION/modules
 	mkdir -p "$imagedir"
 #	mkdir -p "$modulesdir"
-	git_checkout "$GLUON_SITEDIR" $1
-	git_pull "$GLUON_SITEDIR"
+	set_sitedir "$1"
 	
 	for CUR_BUILD_TARGET in $TARGETS_TO_BUILD
 	do
@@ -497,16 +511,19 @@ fi
 build_make_opts
 mkdir -p "$BUILD_LOG_DIR" &>/dev/null
 
-prepare_repo "$GLUON_SITEDIR" $SITE_URL
+check_domains
+
+mkdir "$GLUON_SITEDIR"
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
-check_targets
+
+arr=($DOMAINS_TO_BUILD)	
+set_sitedir "${arr[0]}"
+
 check_domains
 
 if [[ ! $DOMAINS_TO_BUILD == "" ]]
 then
-	arr=($DOMAINS_TO_BUILD)
-	git_checkout "$GLUON_SITEDIR" "${arr[0]}"
 	if [[ $SKIP_GLUON_PREBUILD_ACTIONS == 0 ]]
 	then
 		gluon_prepare_buildprocess
@@ -516,8 +533,8 @@ then
 	if running_in_docker 
 	then 
 		force_dir_clean # frees some bytes 
-		notify "green" "Du kannst die Logdateien aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
-		notify "green" "Du kannst die Firmware Images aus dem Container kopieren mit:\ndocker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
+		notify "green" "Du kannst die Logdateien aus dem Container kopieren mit: \n docker cp $HOSTNAME:$BUILD_LOG_DIR <destination>" true
+		notify "green" "Du kannst die Firmware Images aus dem Container kopieren mit: \n docker cp $HOSTNAME:$BUILD_OUTPUT_DIR <destination>" true
 	fi
 fi
 

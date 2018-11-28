@@ -9,6 +9,7 @@ ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikro
 
 ENV BUILD_GLUON_DIR_DOCKER_ENV /usr/src/build/gluon
 ENV BUILD_SITE_DIR_DOCKER_ENV /usr/src/build/site
+ENV BUILD_ALL_SITES_DIR_DOCKER_ENV /usr/src/sites
 ENV BUILD_LOG_DIR_DOCKER_ENV /usr/src/build/log
 ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
 ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo_ng/domaenen
@@ -33,6 +34,7 @@ COPY ChatAuthTokens/* /usr/src/ChatAuthTokens/
 RUN adduser --system --home /usr/src/build build
 USER build
 WORKDIR /usr/src/build
+COPY sites /usr/src/sites
 RUN git config --global user.email "technik@freifunk-dortmund.de"
 RUN git config --global user.name "FFDO Gluon Build Container"
 

@@ -17,6 +17,10 @@ docker rm ffdobuild
 docker rmi ffdobuild
 ```
 
+## Updating the site configuration
+
+Change the files in the folder sites and call make-all-site-conf.sh to upgrade
+the site configuration for all domains in the generated folder.
 
 ## Note 
 

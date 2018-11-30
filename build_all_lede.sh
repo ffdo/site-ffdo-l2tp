@@ -339,7 +339,6 @@ function set_sitedir() {
 	then
 		rm -rf "$GLUON_SITEDIR"
 	fi	
-	echo "cp -r  $DEFAULT_GLUON_ALL_SITES_DIR/$1 $GLUON_SITEDIR"
 	mkdir "$GLUON_SITEDIR"
 	cp -r "$DEFAULT_GLUON_ALL_SITES_DIR/$1"/* "$GLUON_SITEDIR/"
 }

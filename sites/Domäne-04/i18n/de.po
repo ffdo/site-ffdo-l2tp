@@ -16,6 +16,16 @@ msgstr ""
 "Freifunk-Knoten. Fülle das folgende Formular deinen Vorstellungen "
 "entsprechend aus und sende es ab."
 
+msgid "gluon-config-mode:domain"
+msgstr "Domäne"
+
+msgid "gluon-config-mode:domain-select"
+msgstr ""
+"Hier hast du die Möglichkeit, die Mesh-Domäne, in der sich dein Knoten "
+"befindet, auszuwählen. Bitte denke daran, dass sich dein Knoten nur mit den "
+"Knoten der ausgewählten Domäne verbinden kann.<br />"
+"Auf der <a href=\"https://fw-download.ffdo.de/\">Download-Seite</a> ist eine"
+"Karte zur Auswahl der Domäne verfügbar."
 
 msgid "gluon-config-mode:pubkey"
 msgstr ""
@@ -24,8 +34,7 @@ msgstr ""
 "Bitte vergiss nicht das Netzwerkkabel vom gelben LAN Port in den blauen WAN Port umzustecken."
 "</p>"
 "<div class=\"the-key\">"
-" # <%= pcdata(hostname) %>"
-" <br />"
+"# <%= pcdata(hostname) %><br />"
 "<%= pubkey %>"
 "</div>"
 
@@ -44,9 +53,19 @@ msgstr ""
 "Informationen zu Freifunk Dortmund findest du auf der <a href=\"http://www.freifunk-dortmund.de/\">lokalen Webseite</a>."
 "Weitere Informationen zum Freifunk Rheinland e.V. findest du auf <a href=\"https://freifunk-rheinland.net/\">unserer Vereinswebseite</a>.</p>"
 "<p>Um zu dieser Konfigurationsseite zurückzugelangen, drücke im normalen "
-"Betrieb für drei Sekunden den Reset-Button. Das Gerät wird dann im Config "
+"Betrieb für ca. 10 Sekunden den Reset-Button. Das Gerät wird dann im Config "
 "Mode neustarten.</p>"
-"<p>Viel Spaß bei der Erkundung von Freifunk!</p>"
+"<p>Viel Spaß mit deinem Knoten und der Erkundung von Freifunk!</p>"
+
+# Leave empty to use the default text, which can be found in:
+# package/gluon-config-mode-hostname/i18n/
+msgid "gluon-config-mode:hostname-help"
+msgstr ""
+
+# Leave empty to use the default text, which can be found in:
+# package/gluon-config-mode-geo-location/i18n/
+msgid "gluon-config-mode:geo-location-help"
+msgstr ""
 
 msgid "gluon-config-mode:altitude-label"
 msgstr "Höhe"
@@ -56,3 +75,10 @@ msgstr ""
 "Die Höhenangabe ist optional und sollte nur gesetzt werden, wenn ein "
 "exakter Wert bekannt ist."
 
+# Leave empty to use the default text, which can be found in:
+# package/gluon-config-mode-contact-info/i18n/
+msgid "gluon-config-mode:contact-help"
+msgstr ""
+
+msgid "gluon-config-mode:contact-note"
+msgstr ""

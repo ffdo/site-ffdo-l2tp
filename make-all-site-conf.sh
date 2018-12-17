@@ -1,9 +1,12 @@
 #!/bin/bash
 
-TARGETS="1 2 3 4 5 6 7 8 9 10 11"
+set -e
 
+# The output dir will be deleted and recreated in the process!
+OUTPUT_DIR=./generated/sites
 
-for target in $TARGETS
+for target in "./sites/configs/"*
 do
-	bash ./make-site-conf.sh $target > site$target.conf
+	./create_sitedir.py "./sites/templates" "./sites/common" "$target" "$OUTPUT_DIR/$(basename "$target" .yaml)"
 done
+echo "Site configurations created in $OUTPUT_DIR"

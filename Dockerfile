@@ -23,8 +23,11 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV DEBIAN_PRIORITY critical
 ENV DEBCONF_NOWARNINGS yes
 
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
 RUN apt-get update
-RUN apt-get -y install --no-install-recommends adduser bash ca-certificates curl python python3 wget file git subversion build-essential gawk unzip libncurses5-dev zlib1g-dev openssl libssl-dev bsdmainutils && apt-get clean
+RUN apt-get -y install --no-install-recommends adduser bash ca-certificates curl python python3 python3-yaml python3-jinja2 wget file git subversion build-essential gawk unzip libncurses5-dev zlib1g-dev openssl libssl-dev bsdmainutils && apt-get clean
 
 ADD build_all_lede.sh /usr/src/build_all_lede.sh
 RUN chmod 777 /usr/src/build_all_lede.sh
@@ -34,7 +37,7 @@ COPY ChatAuthTokens/* /usr/src/ChatAuthTokens/
 RUN adduser --system --home /usr/src/build build
 USER build
 WORKDIR /usr/src/build
-COPY sites /usr/src/sites
+COPY generated/sites /usr/src/sites
 RUN git config --global user.email "technik@freifunk-dortmund.de"
 RUN git config --global user.name "FFDO Gluon Build Container"
 

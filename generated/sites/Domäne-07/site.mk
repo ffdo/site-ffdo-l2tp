@@ -61,7 +61,7 @@ GLUON_PRIORITY ?= 0
 GLUON_REGION ?= eu
 
 # Use ibss enabled firmware for ath10k
-GLUON_ATH10K_MESH ?= ibss
+GLUON_WLAN_MESH ?= ibss
 
 # Languages to include
 GLUON_LANGS ?= en de

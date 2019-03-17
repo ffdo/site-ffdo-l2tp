@@ -1,7 +1,7 @@
 FROM debian:stretch
 MAINTAINER Cajus Kamer <Cajus.Kamer@arcor.de>
 
-ENV GLUON_TAG_DOCKER_ENV v2018.2
+ENV GLUON_TAG_DOCKER_ENV v2018.2.1
 ENV GLUON_RELEASE_DOCKER_ENV 2.2.2
 
 ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik ipq40xx mpc85xx-generic ramips-mt7621 x86-generic x86-64 

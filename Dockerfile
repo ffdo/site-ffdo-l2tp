@@ -13,6 +13,7 @@ ENV BUILD_ALL_SITES_DIR_DOCKER_ENV /usr/src/sites
 ENV BUILD_LOG_DIR_DOCKER_ENV /usr/src/build/log
 ENV BUILD_OUTPUT_DIR_DOCKER_ENV /usr/src/build/build
 ENV BUILD_IMAGE_DIR_PREFIX_DOCKER_ENV /data/images.ffdo.de/ffdo_ng/domaenen
+ENV GLUON_PATCH_DIR_DOCKER_ENV /usr/src/GluonPatches
 
 # ENV TELEGRAM_NOTIFY_CHATID_DOCKER_ENV=
 ENV TELEGRAM_AUTH_TOKEN_DOCKER_ENV=/usr/src/ChatAuthTokens/telegram.authToken
@@ -33,6 +34,8 @@ ADD build_all_lede.sh /usr/src/build_all_lede.sh
 RUN chmod 777 /usr/src/build_all_lede.sh
 ADD ChatAuthTokens /usr/src/ChatAuthTokens
 COPY ChatAuthTokens/* /usr/src/ChatAuthTokens/
+ADD GluonPatches /usr/src/GluonPatches
+COPY GluonPatches/*   /usr/src/GluonPatches/
 
 RUN adduser --system --home /usr/src/build build
 USER build

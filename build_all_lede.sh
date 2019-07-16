@@ -7,6 +7,7 @@ DEFAULT_GLUON_OUTPUTDIR_PREFIX=$DEFAULT_BUILD_OUTPUT_DIR/${BUILD_IMAGE_DIR_PREFI
 DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
 DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
 DEFAULT_GLUON_ALL_SITES_DIR=${BUILD_ALL_SITES_DIR_DOCKER_ENV:-$(pwd)'/sites'}
+DEFAULT_GLUON_PATCH_DIR=${GLUON_PATCH_DIR_DOCKER_ENV:-''}
 
 if [ -f HIPCHAT_AUTH_TOKEN ]; then
 	HIPCHAT_NOTIFY_URL="https://hc.infrastruktur.ms/v2/room/34/notification?auth_token=$(cat HIPCHAT_AUTH_TOKEN)" # HIPCHAT_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für HipChat enthalten.
@@ -39,6 +40,7 @@ SKIP_GLUON_PREBUILD_ACTIONS=""
 FORCE_DIR_CLEAN=""
 BUILD_OUTPUT_DIR=""
 BUILD_LOG_DIR=""
+GLUON_PATCH_DIR=""
 imagedir=""
 modulesdir=""
 
@@ -80,7 +82,7 @@ function set_arguments_not_passed () {
 	SKIP_GLUON_PREBUILD_ACTIONS=${SKIP_GLUON_PREBUILD_ACTIONS:-0}
 	BUILD_OUTPUT_DIR=${DEFAULT_BUILD_OUTPUT_DIR}
 	BUILD_LOG_DIR=${DEFAULT_LOG_DIR:-'.'}
-
+	GLUON_PATCH_DIR=${GLUON_PATCH_DIR:-$DEFAULT_GLUON_PATCH_DIR}
 
 	GLUON_OUTPUTDIR_PREFIX=$(expand_relativ_path "$GLUON_OUTPUTDIR_PREFIX")
 	BUILD_OUTPUT_DIR=$(expand_relativ_path "$BUILD_OUTPUT_DIR")
@@ -286,7 +288,7 @@ echo 'Usage: $0 [PARAMETERS] GLUON_RELEASE_TAG VERSION_NUMBER
 
 Parameters:
 
-All parameters can be set in one of the following ways: -e <value>, -e<value>, --example <value>, --exmaple==<value>
+All parameters can be set in one of the following ways: -e <value>, -e<value>, --example <value>, --example==<value>
 
 	-j --cores: Number of cores to use. If left empty, all cores will be used.
 
@@ -329,9 +331,17 @@ function git_checkout () {
 	try_execution_x_times $RETRIES "$title" "$command"
 }
 
-function git_pull () {
-	git -C "$1" pull
+function apply_patches () {
+	if is_folder "$1" && is_git_repo "$1" && is_folder "$2"
+	then
+		for patch in "$2"/*; do
+			command="git -C \"$1\" am --ignore-whitespace \"$patch\""
+			title="git-apply-patches-"$(basename "$patch")
+			try_execution_x_times $RETRIES "$title" "$command"
+		done
+	fi
 }
+
 
 function set_sitedir() {
 # 	mkdir "$GLUON_SITEDIR"
@@ -515,6 +525,9 @@ check_domains
 mkdir "$GLUON_SITEDIR"
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
+
+apply_patches "$GLUON_GLUONDIR" "$GLUON_PATCH_DIR"
+
 
 arr=($DOMAINS_TO_BUILD)	
 set_sitedir "${arr[0]}"

@@ -1,10 +1,10 @@
-FROM debian:stretch
+FROM debian:buster
 MAINTAINER Cajus Kamer <Cajus.Kamer@arcor.de>
 
-ENV GLUON_TAG_DOCKER_ENV v2018.1.4
-ENV GLUON_RELEASE_DOCKER_ENV 2.1.3
+ENV GLUON_TAG_DOCKER_ENV v2021.1
+ENV GLUON_RELEASE_DOCKER_ENV 2021.1
 
-ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-nand ar71xx-tiny ar71xx-mikrotik mpc85xx-generic ramips-mt7621 x86-generic x86-64 
+ENV GLUON_TARGETS_DOCKER_ENV ar71xx-generic ar71xx-tiny ar71xx-nand brcm2708-bcm2708 brcm2708-bcm2709 mpc85xx-generic mpc85cc-p1020 lantiq-xway lantiq-xrx200 ath79-generic ramips-mt7621 sunxi-cortexa7 x86-generic x86-geodex86-64 x86-legacy ipq40xx-generic ipq806x-generic ramips-mt7620 ramips-mt76x8 ramips-rt305x
 # ENV DOMAINS_TO_BUILD_DOCKER_ENV Domäne-01 Domäne-02 Domäne-03 Domäne-04 Domäne-05 Domäne-06 Domäne-07 Domäne-08 Domäne-09 Domäne-09 Domäne-10 Domäne-11
 
 ENV BUILD_GLUON_DIR_DOCKER_ENV /usr/src/build/gluon

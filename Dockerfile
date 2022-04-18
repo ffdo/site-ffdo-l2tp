@@ -35,5 +35,6 @@ USER build
 WORKDIR /usr/src/build
 RUN git config --global user.email "technik@freifunk-dortmund.de"
 RUN git config --global user.name "FFDO Gluon Build Container"
+RUN git config --global url."https://github.com/".insteadOf git://github.com/
 
 CMD ["/bin/bash", "/usr/src/build_all_lede.sh", "-B", "--force-retries", "3"]

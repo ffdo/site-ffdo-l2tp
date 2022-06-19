@@ -8,6 +8,7 @@ DEFAULT_GLUON_SITEDIR=${BUILD_SITE_DIR_DOCKER_ENV:-$(dirname $(pwd))'/site/'}
 DEFAULT_GLUON_DIR=${BUILD_GLUON_DIR_DOCKER_ENV:-'../gluon/'}
 DEFAULT_GLUON_ALL_SITES_DIR=${BUILD_ALL_SITES_DIR_DOCKER_ENV:-$(pwd)'/sites'}
 DEFAULT_GLUON_PATCH_DIR=${GLUON_PATCH_DIR_DOCKER_ENV:-''}
+DEFAULT_GLUON_CHERRY_PICKS=${GLUON_CHERRIES_ENV:-''}
 
 if [ -f HIPCHAT_AUTH_TOKEN ]; then
 	HIPCHAT_NOTIFY_URL="https://hc.infrastruktur.ms/v2/room/34/notification?auth_token=$(cat HIPCHAT_AUTH_TOKEN)" # HIPCHAT_AUTH_TOKEN Muss als Datei im gleichen Ordner wie build_all.sh liegen und den AuthToken für HipChat enthalten.
@@ -41,6 +42,7 @@ FORCE_DIR_CLEAN=""
 BUILD_OUTPUT_DIR=""
 BUILD_LOG_DIR=""
 GLUON_PATCH_DIR=""
+GLUON_CHERRY_PICKS=""
 imagedir=""
 modulesdir=""
 
@@ -83,6 +85,7 @@ function set_arguments_not_passed () {
 	BUILD_OUTPUT_DIR=${DEFAULT_BUILD_OUTPUT_DIR}
 	BUILD_LOG_DIR=${DEFAULT_LOG_DIR:-'.'}
 	GLUON_PATCH_DIR=${GLUON_PATCH_DIR:-$DEFAULT_GLUON_PATCH_DIR}
+	GLUON_CHERRY_PICKS=${GLUON_CHERRY_PICKS:-$DEFAULT_GLUON_CHERRY_PICKS}
 
 	GLUON_OUTPUTDIR_PREFIX=$(expand_relativ_path "$GLUON_OUTPUTDIR_PREFIX")
 	BUILD_OUTPUT_DIR=$(expand_relativ_path "$BUILD_OUTPUT_DIR")
@@ -331,6 +334,13 @@ function git_checkout () {
 	try_execution_x_times $RETRIES "$title" "$command"
 }
 
+
+function git_cherry_pick () {
+	command="git -C \"$1\" cherry-pick -m 1 $2"
+	title="git-cherry-pick-"$(basename "$1")"-$2"
+	try_execution_x_times $RETRIES "$title" "$command"
+}
+
 function apply_patches () {
 	if is_folder "$1" && is_git_repo "$1" && is_folder "$2"
 	then
@@ -525,6 +535,11 @@ check_domains
 mkdir "$GLUON_SITEDIR"
 prepare_repo "$GLUON_GLUONDIR" $GLUON_URL
 git_checkout "$GLUON_GLUONDIR" $GLUON_VERSION
+
+for CHERRY in $GLUON_CHERRY_PICKS
+do
+	git_cherry_pick "$GLUON_GLUONDIR" "$CHERRY"
+done
 
 apply_patches "$GLUON_GLUONDIR" "$GLUON_PATCH_DIR"
 

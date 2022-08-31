@@ -1,5 +1,0 @@
-GLUON_SITE_FEEDS='ffms'
-
-PACKAGES_FFMS_REPO=https://github.com/FreiFunkMuenster/packages-ffms.git
-PACKAGES_FFMS_COMMIT=cd220da232057e39bfb079d1b9c1bc49077b2a56
-PACKAGES_FFMS_BRANCH=v2018.1.x
